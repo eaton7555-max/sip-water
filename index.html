@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Sip</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0ea5e9">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sip">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      touch-action: manipulation;
+    }
+    .count {
+      font-size: 5rem;
+      font-weight: 700;
+      letter-spacing: -2px;
+      margin-bottom: 8px;
+    }
+    .goal { font-size: 1.2rem; color: #94a3b8; margin-bottom: 24px; }
+    .glasses {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .glass {
+      width: 36px;
+      height: 48px;
+      border: 3px solid #38bdf8;
+      border-radius: 0 0 8px 8px;
+      position: relative;
+      overflow: hidden;
+      background: #1e293b;
+    }
+    .glass::before {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 0%;
+      background: linear-gradient(to top, #0ea5e9, #38bdf8);
+      transition: height 0.3s ease;
+    }
+    .glass.filled::before { height: 100%; }
+    .btn {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: #0ea5e9;
+      border: none;
+      color: white;
+      font-size: 2.5rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(14, 165, 233, 0.4);
+      transition: transform 0.1s;
+    }
+    .btn:active { transform: scale(0.96); }
+    .reset {
+      margin-top: 32px;
+      color: #64748b;
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+    .celebration {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #facc15;
+      animation: fall 1.5s linear forwards;
+    }
+    @keyframes fall {
+      to { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="count" id="count">0</div>
+  <div class="goal">/ 8 glasses</div>
+  <div class="glasses" id="glasses"></div>
+  <button class="btn" id="add">+1</button>
+  <a href="#" class="reset" id="reset">Reset today</a>
+  <div class="celebration" id="celebration"></div>
+
+  <script>
+    const GOAL = 8;
+    const glassesEl = document.getElementById("glasses");
+    const countEl = document.getElementById("count");
+    const addBtn = document.getElementById("add");
+    const resetBtn = document.getElementById("reset");
+    const celebration = document.getElementById("celebration");
+
+    for (let i = 0; i < GOAL; i++) {
+      const g = document.createElement("div");
+      g.className = "glass";
+      glassesEl.appendChild(g);
+    }
+
+    function getTodayKey() {
+      const d = new Date();
+      return `sip-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    }
+
+    function load() {
+      const key = getTodayKey();
+      const saved = localStorage.getItem(key);
+      return saved ? parseInt(saved, 10) : 0;
+    }
+
+    function save(n) {
+      localStorage.setItem(getTodayKey(), n);
+    }
+
+    function render(n) {
+      countEl.textContent = n;
+      const glasses = glassesEl.children;
+      for (let i = 0; i < GOAL; i++) {
+        glasses[i].classList.toggle("filled", i < n);
+      }
+      if (n >= GOAL) celebrate();
+    }
+
+    function celebrate() {
+      celebration.innerHTML = "";
+      for (let i = 0; i < 40; i++) {
+        const c = document.createElement("div");
+        c.className = "confetti";
+        c.style.left = Math.random() * 100 + "%";
+        c.style.background = ["#facc15","#22d3ee","#a78bfa","#f472b6"][Math.floor(Math.random()*4)];
+        c.style.animationDelay = Math.random() * 0.5 + "s";
+        celebration.appendChild(c);
+      }
+      setTimeout(() => celebration.innerHTML = "", 2000);
+    }
+
+    addBtn.onclick = () => {
+      let n = load();
+      if (n < GOAL) {
+        n++;
+        save(n);
+        render(n);
+      }
+    };
+
+    resetBtn.onclick = (e) => {
+      e.preventDefault();
+      save(0);
+      render(0);
+    };
+
+    render(load());
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    }
+  </script>
+</body>
+</html>
